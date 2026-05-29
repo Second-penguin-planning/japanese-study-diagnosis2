@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>にほんご べんきょう タイプしんだん</title>
+    <style>
+        :root { --primary: #0f766e; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--primary); text-align: center; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .question { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .question p { margin-top: 0; font-weight: bold; }
+        .option { display: block; margin: 10px 0; cursor: pointer; }
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #115e59; }
+        .result-box { background: #e0f2fe; padding: 20px; border-radius: 8px; margin-top: 15px; }
+        .tab-container { margin: 20px 0; border-bottom: 2px solid #e2e8f0; }
+        .tab { display: inline-block; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .tab.active { border-bottom: 4px solid var(--primary); color: var(--primary); }
+        .model-content { display: none; background: #fff; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .model-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- ① トップ / 導入 -->
+    <div id="step-intro" class="section active">
+        <h1>にほんご べんきょう しんだん</h1>
+        <p style="text-align:center; font-weight:bold;">あなたに いちばん あう べんきょうの かた（タイプ）を みつけましょう！</p>
+        <button onclick="nextStep('step-user')">はじめる (Start)</button>
+    </div>
+
+    <!-- ② 基本情報入力 -->
+    <div id="step-user" class="section">
+        <h2>あなたの ことを おしえてください</h2>
+        <div class="form-group">
+            <label>なまえ (Name)</label>
+            <input type="text" id="user-name" placeholder="アルファベット または カタカナ">
+        </div>
+        <div class="form-group">
+            <label>ねんれい (Age)</label>
+            <input type="number" id="user-age">
+        </div>
+        <div class="form-group">
+            <label>くに (Nationality)</label>
+            <input type="text" id="user-nation">
+        </div>
+        <div class="form-group">
+            <label>VISAの しゅるい (Visa Type)</label>
+            <select id="user-visa">
+                <option value="留学">りゅうがく (Student)</option>
+                <option value="技能実習">ぎのうじっしゅう (Technical Intern)</option>
+                <option value="特定技能">とくていぎのう (Specified Skilled Worker)</option>
+                <option value="その他">その他 (Other)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>いまの にほんごレベル (Current Level)</label>
+            <select id="user-level">
+                <option value="N5より下">N5より した (Below N5)</option>
+                <option value="N5合格">N5ごうかく (N5 Passed)</option>
+                <option value="N4相当">N4ぐらい (N4 Level)</option>
+                <option value="その他">その他 (Other)</option>
+            </select>
+        </div>
+        <button onclick="nextStep('step-questions')">つぎへ (Next)</button>
+    </div>
+
+    <!-- ② 質問入力 -->
+    <div id="step-questions" class="section">
+        <h2>しつもん (Questions)</h2>
+        <div id="questions-container"></div>
+        <button onclick="calculateResult()">しんだんする (Result)</button>
+    </div>
+
+    <!-- ③ 診断結果・モデル提示 -->
+    <div id="step-result" class="section">
+        <h2>しんだん けっか (Result)</h2>
+        <p style="font-size:18px; text-align:center;">あなたの タイプは: <br><strong id="type-title" style="font-size:24px; color:var(--primary);"></strong> です！</p>
+        <p id="type-desc" style="text-align:center; font-weight:bold;"></p>
+        
+        <div class="result-box">
+            <h3 style="text-align:center;">おすすめの べんきょうほう</h3>
+            <div class="tab-container" style="text-align:center;">
+                <div id="tab-gattsuri" class="tab active" onclick="switchModel('gattsuri')">ガッツリ派 (1.5〜2時間)</div>
+                <div id="tab-jikkuri" class="tab" onclick="switchModel('jikkuri')">じっくり派 (30〜45分)</div>
+            </div>
+            <div id="model-gattsuri" class="model-content active"></div>
+            <div id="model-jikkuri" class="model-content"></div>
+        </div>
+        
+        <p id="db-status" style="margin-top:20px; font-weight:bold; text-align:center;"></p>
+    </div>
+</div>
+
+<script>
+// 質問データ定義
+const questions = [
+    { q: "1. 新しい 言葉（ことば）を おぼえるとき、どれが すきですか？", name: "q1", options: { A:"絵 （え）や 写真（しゃしん）を 見る", B:"音（おと）や 声（こえ）を 聞く", C:"声に 出して 言う", D:"ルール（文法）を 考える", E:"何回も 書く" } },
+    { q: "2. 休みの 日（ひ）は、よく 何を しますか？", name: "q2", options: { A:"YouTube や アニメを 見る", B:"音楽（おんがく）を 聞く", C:"友だちと 話す、あそぶ", D:"本を読む、しらべる", E:"家で ゆっくり 休む" } },
+    { q: "3. 日本語の 勉強（べんきょう）で、一番 したいことは 何ですか？", name: "q3", options: { A:"漢字 や ひらがなを 読むこと", B:"日本人の 話が わかること", C:"日本人と たくさん 話すこと", D:"テスト（JLPTなど）に 合格すること", E:"毎日 少しずつ 勉強すること" } },
+    { q: "4. わからない 日本語が あったとき、どうしますか？", name: "q4", options: { A:"スマホの 翻訳（ほんやく）アプリで 見る", B:"音声（おんせい）翻訳で 聞く", C:"となりの 人に すぐ 聞く", D:"どうしてか ネットで 理由を しらべる", E:"メモをして、あとで 先生に 聞く" } },
+    { q: "5. あなたの 仕事（しごと）や 学校（がっこう）は 忙（いそが）しいですか？", name: "q5", options: { A:"電車や バスの 時間が 長い", B:"手は 忙しいが、耳は あいている", C:"毎日、たくさんの 人と 話す", D:"勉強の 時間は 自分で 作れる", E:"毎日 とても 疲れる" } },
+    { q: "6. スマホで よく 使う アプリは 何ですか？", name: "q6", options: { A:"Instagram, TikTok", B:"Spotify, Podcast", C:"LINE, WhatsApp", D:"Google, ニュース", E:"カレンダー, メモ" } },
+    { q: "7. 勉強するとき、どうすると 頑張（がんば）れますか？", name: "q7", options: { A:"きれいな ノート や 画面を見る", B:"好きな 音楽や 音を聞く", C:"誰かに 「上手だね」と言われる", D:"テストの 点が よくなる", E:"毎日の 記録が たまる" } }
+];
+
+// タイプ別の解説と教材
+const typeDetails = {
+    'A': { title: '「みるみる」タイプ（視覚派）', desc: '目で見る情報（絵、動画、文字）から覚えるのが得意です。', gattsuri: '【毎日90分】朝の通学中にフラッシュカードアプリで単語を30分チェック。夜はYouTubeの文法アニメ動画を45分集中して見てノートにイラストで図解。残り15分でChatGPTにN5レベルの短いお話を生成してもらい「読む」練習をします。■おすすめアプリ: Anki, Quizlet, YouTube', jikkuri: '【毎日30分】昼休みにInstagramやTikTokの日本語学習ショート動画を15分見る。寝る前にDuolingoを15分、イラストを見ながらゲーム感覚で進めます。■おすすめアプリ: Instagram, Duolingo' },
+    'B': { title: '「きくきく」タイプ（聴覚派）', desc: '耳から聴く情報（音声、音楽、ラジオ）から覚えるのが得意です。', gattsuri: '【毎日90分】移動中の40分間、初心者向けPodcastをしっかり聴く。夜は50分間、聴いた音声のスクリプトを確認し、聞こえた通りに発音する「シャドーイング」を徹底的に行い、自分の声を録音して確認します。■おすすめアプリ: Spotify, NHK WORLD(Easy Japanese)', jikkuri: '【毎日30分】通勤や家事をしながら日本の音楽や初心者用Podcastを30分間BGMとして流し、知っている単語を耳で捕まえる練習をします。■おすすめアプリ: Spotify, YouTube' },
+    'C': { title: '「ペラペラ」タイプ（実践・会話派）', desc: '人と話すこと、自分で言葉を発することで覚えるのが得意です。', gattsuri: '【毎日90分】夜にChatGPTの音声モードを使い「コンビニでの会話」などのテーマで30分ロールプレイ。言語交換アプリを使って日本人の友達と30分チャット。残り30分で今日話せなかった表現を調べてメモします。■おすすめアプリ: ChatGPT(音声入力), HelloTalk', jikkuri: '【毎日30分】毎日学校や職場の日本人に、覚えたフレーズを最低3回は話しかけて使う。夜はスマホの音声認識（Siri等）に向かって日本語で日記を3行吹き込みます。■おすすめアプリ: スマートフォンの音声入力機能' },
+    'D': { title: '「スッキリ」タイプ（分析・文法派）', desc: 'ルールや仕組みを論理的に理解するとグングン伸びるタイプです。', gattsuri: '【毎日90分】JLPTの過去問題や模擬試験を45分間解く。後半の45分で、間違えた問題の解説をじっくり読み、ChatGPTに「なぜこの文法になるのか」を質問して、自分だけの『仕組みノート』を構築します。■おすすめアプリ: Todai Easy Japanese News, ChatGPT', jikkuri: '【毎日30分】1日に1つの文法ルール（例：「〜て形」など）だけをターゲットにし、解説WebサイトやJisho.orgを使って構造をじっくり理解し、例文を2つ作ります。■おすすめアプリ: Jisho.org, オンライン文法辞書' },
+    'E': { title: '「コツコツ」タイプ（習慣・継続派）', desc: '毎日同じ時間、同じルーティンを淡々と続けることで強みを発揮します。', gattsuri: '【毎日90分】完全にスケジュールを固定します。朝起きて30分は前日の単語の復習。夜21時になったらアラームを鳴らして机に向かい、市販のN5ドリルを2ページ進め、タスク管理アプリにチェックを入れます。■おすすめアプリ: Todoist, Notion', jikkuri: '【毎日30分】朝の朝食後にDuolingoを1レッスン（15分）クリアする。夜寝る前にノートに今日の単語を3つだけ書いて、カレンダーに〇をつけます。■おすすめアプリ: Duolingo, スタディプラス' }
+};
+
+let currentType = 'A';
+
+// 画面遷移
+function nextStep(stepId) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(stepId).classList.add('active');
+    if(stepId === 'step-questions' && document.getElementById('questions-container').children.length === 0) {
+        renderQuestions();
+    }
+}
+
+// 質問のレンダリング
+function renderQuestions() {
+    const container = document.getElementById('questions-container');
+    questions.forEach((q, idx) => {
+        let qHtml = `<div class="question"><p>${q.q}</p>`;
+        for(let key in q.options) {
+            // 回答漏れエラーを防ぐため、Aの選択肢をデフォルトで選択状態(checked)にしています
+            let checked = (key === 'A') ? 'checked' : '';
+            qHtml += `<label class="option"><input type="radio" name="${q.name}" value="${key}" ${checked}> ${key}: ${q.options[key]}</label>`;
+        }
+        qHtml += `</div>`;
+        container.innerHTML += qHtml;
+    });
+}
+
+// 結果計算とAirtable送信
+function calculateResult() {
+    let counts = { A:0, B:0, C:0, D:0, E:0 };
+    questions.forEach(q => {
+        const selected = document.querySelector(`input[name="${q.name}"]:checked`).value;
+        counts[selected]++;
+    });
+
+    // 最大得点アルファベットの特定
+    let maxKey = 'A';
+    for(let key in counts) {
+        if(counts[key] > counts[maxKey]) maxKey = key;
+    }
+    currentType = maxKey;
+
+    // 結果表示
+    const detail = typeDetails[maxKey];
+    document.getElementById('type-title').innerText = detail.title;
+    document.getElementById('type-desc').innerText = detail.desc;
+    document.getElementById('model-gattsuri').innerText = detail.gattsuri;
+    document.getElementById('model-jikkuri').innerText = detail.jikkuri;
+
+    nextStep('step-result');
+    document.getElementById('db-status').innerText = "データを ほぞんしています...";
+    sendToAirtable(counts);
+}
+
+// タブ切り替え
+function switchModel(mode) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.model-content').forEach(c => c.classList.remove('active'));
+    if(mode === 'gattsuri') {
+        document.getElementById('tab-gattsuri').classList.add('active');
+        document.getElementById('model-gattsuri').classList.add('active');
+    } else {
+        document.getElementById('tab-jikkuri').classList.add('active');
+        document.getElementById('model-jikkuri').classList.add('active');
+    }
+}
+
+// AirtableAPI送信処理
+function sendToAirtable(counts) {
+    // ※ 実際の運用時はご自身のBaseID, TableName, PersonalAccessTokenに書き換えてください
+    const airtableUrl = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME";
+    const token = "YOUR_PERSONAL_ACCESS_TOKEN";
+
+    // ユーザー選択肢配列の作成
+    let ansArr = [];
+    questions.forEach(q => {
+        ansArr.push(document.querySelector(`input[name="${q.name}"]:checked`).value);
+    });
+
+    const data = {
+        fields: {
+            "Name": document.getElementById('user-name').value || "Anonymous",
+            "Age": parseInt(document.getElementById('user-age').value) || 0,
+            "Nationality": document.getElementById('user-nation').value || "Unknown",
+            "VisaType": document.getElementById('user-visa').value,
+            "JapaneseLevel": document.getElementById('user-level').value,
+            "Answers": ansArr.join(","),
+            "LearningType": typeDetails[currentType].title
+        }
+    };
+
+    if(airtableUrl.includes("YOUR_BASE_ID")) {
+        document.getElementById('db-status').innerText = "しんだん完了！（※Airtableの設定が必要です）";
+        return;
+    }
+
+    fetch(airtableUrl, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => {
+        if(res.ok) document.getElementById('db-status').innerText = "データを ほぞんしました。ありがとうございました！";
+        else document.getElementById('db-status').innerText = "データの ほぞんに しっぱいしました。";
+    })
+    .catch(err => {
+        document.getElementById('db-status').innerText = "通信エラーが発生しました。";
+    });
+}
+</script>
