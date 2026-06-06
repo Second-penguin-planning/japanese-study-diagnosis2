@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -356,8 +356,8 @@ function restartQuiz() {
 // ※ 下記3箇所を書き換えてください
 // ====================================================
 function sendToAirtable(counts) {
-  const airtableUrl = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME";
-  const token       = "YOUR_PERSONAL_ACCESS_TOKEN";
+  const airtableUrl = "https://api.airtable.com/v0/appfs6vBiloGpeoS1/japanese-diagnosis";
+  const token       = "pat0SVxCxl04UbbCT.68ab8c5d959c179deeca23d03b2b974bf4669c5659b9d195f043487394dece7c";
 
   if (airtableUrl.includes("YOUR_BASE_ID")) {
     return; // 未設定の場合はスキップ
@@ -398,3 +398,4 @@ function sendToAirtable(counts) {
 </script>
 </body>
 </html>
+
