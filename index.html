@@ -24,6 +24,9 @@
     .hero-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 0.5rem; }
     .hero h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
     .hero p { font-size: 15px; color: var(--text-secondary); margin-bottom: 1.75rem; line-height: 1.8; }
+    .hero-qr { margin: 0 auto 1.5rem; }
+    .hero-qr img { width: 200px; height: 200px; display: block; margin: 0 auto; border: 6px solid #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    .hero-qr-label { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
     .start-btn { background: var(--type-a); color: #fff; border: none; border-radius: 8px; padding: 14px 40px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     .start-btn:hover { background: var(--type-a-dark); }
     .step-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 0.75rem; }
@@ -95,6 +98,10 @@
       <div class="hero-sub">にほんご　べんきょう</div>
       <h1>日本語学習 タイプしんだん</h1>
       <p>あなたに　いちばん　あう<br>べんきょうの　しかたを　みつけましょう！<br><span style="font-size:13px">（やさしい　しつもんに　こたえるだけ　です）</span></p>
+      <div class="hero-qr">
+        <img src="QR_diagnosis2.png" alt="QRコード" />
+        <div class="hero-qr-label">📱 QRコードをスキャンしてアクセス</div>
+      </div>
       <button class="start-btn" onclick="nextStep('step-user')">はじめる　▶</button>
     </div>
   </div>
